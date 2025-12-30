@@ -1,5 +1,6 @@
 """
 Oslo Parking Finder - Mobile-Friendly Streamlit App
+FIXED: GPS location now persists using session_state
 """
 import streamlit as st
 import pandas as pd
@@ -35,8 +36,8 @@ st.markdown(
     f"""
     <style>
     .header {{
-        position: absolute;  /* Fix the position */
-        top: 20px;  /* Adjust as needed */
+        position: fixed;  /* Fix the position */
+        top: 70px;  /* Adjust as needed */
         right: 20px;  /* Align to the right */
         display: flex;
         justify-content: flex-end;
@@ -489,10 +490,16 @@ if location_method == "📍 Use my current location (GPS)":
     # Get geolocation
     location = streamlit_geolocation()
     
+    # ✅ FIX: Save location to session state when detected
     if location and location.get("latitude") is not None:
-        # Location successfully retrieved
-        user_lat = location["latitude"]
-        user_lon = location["longitude"]
+        st.session_state.gps_lat = location["latitude"]
+        st.session_state.gps_lon = location["longitude"]
+    
+    # ✅ FIX: Check if we have location saved in session state
+    if 'gps_lat' in st.session_state and 'gps_lon' in st.session_state:
+        # Use saved location
+        user_lat = st.session_state.gps_lat
+        user_lon = st.session_state.gps_lon
         user_location = (user_lat, user_lon)
         
         st.success(f"✅ Location detected: {user_lat:.6f}, {user_lon:.6f}")
@@ -503,6 +510,11 @@ if location_method == "📍 Use my current location (GPS)":
             st.caption(f"📍 Your coordinates: {user_lat:.4f}, {user_lon:.4f}")
         with col2:
             if st.button("🔄 Refresh Location"):
+                # Clear session state to get new GPS reading
+                if 'gps_lat' in st.session_state:
+                    del st.session_state.gps_lat
+                if 'gps_lon' in st.session_state:
+                    del st.session_state.gps_lon
                 st.rerun()
     else:
         # Waiting for location or permission denied
