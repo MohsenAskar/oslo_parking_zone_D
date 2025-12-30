@@ -37,7 +37,7 @@ st.markdown(
     <style>
     .header {{
         position: absolute;  /* Fix the position */
-        top: 70px;  /* Adjust as needed */
+        top: 20px;  /* Adjust as needed */
         right: 20px;  /* Align to the right */
         display: flex;
         justify-content: flex-end;
