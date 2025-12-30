@@ -8,6 +8,7 @@ import json
 from math import radians, cos, sin, asin, sqrt
 import folium
 from streamlit_folium import st_folium
+from streamlit_geolocation import streamlit_geolocation
 import base64
 
 # Configure page for mobile
@@ -35,25 +36,28 @@ st.markdown(
     <style>
     .header {{
         position: fixed ;  /* Fix the position */
-        top: 50px;  /* Adjust as needed */
-        right: 50px;  /* Align to the right */
+        top: 70px;  /* Adjust as needed */
+        right: 20px;  /* Align to the right */
         display: flex;
         justify-content: flex-end;
         align-items: center;
         padding: 10px;
         flex-direction: column; /* Stack items vertically */
         text-align: center; /* Ensures text is centrally aligned */
+        z-index: 999;
     }}
     .header img {{
         border-radius: 50%;
         width: 50px;
         height: 50px;
         margin-bottom: 5px; /* Space between image and text */
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
     }}
     .header-text {{
         font-size: 12px;
         font-weight: normal; /* Regular weight for text */
         text-align: center;
+        opacity: 0.8;
     }}
     </style>
     <div class="header">
@@ -470,73 +474,84 @@ st.subheader("📍 Find Your Location")
 
 location_method = st.radio(
     "How would you like to set your location?",
-    ["Use my current location (GPS)", "Enter address/coordinates manually"],
+    ["📍 Use my current location (GPS)", "✏️ Enter coordinates manually"],
     label_visibility="collapsed"
 )
 
 user_location = None
 
-if location_method == "Use my current location (GPS)":
+if location_method == "📍 Use my current location (GPS)":
     st.info("""
-    👆 Click the button below to get your current location.
-    (You may need to allow location access in your browser)
+    **Click the button below to get your GPS location**
+    
+    Your browser will ask for location permission. Click "Allow" to continue.
     """)
     
-    # Use HTML5 Geolocation API
-    html_code = """
-    <script>
-    function getLocation() {
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                function(position) {
-                    const lat = position.coords.latitude;
-                    const lon = position.coords.longitude;
-                    window.parent.postMessage({
-                        type: 'streamlit:setComponentValue',
-                        value: {lat: lat, lon: lon}
-                    }, '*');
-                },
-                function(error) {
-                    alert('Error getting location: ' + error.message);
-                }
-            );
-        } else {
-            alert('Geolocation is not supported by this browser.');
-        }
-    }
-    </script>
-    <button onclick="getLocation()" style="
-        background-color: #0066cc;
-        color: white;
-        font-size: 1.1rem;
-        padding: 0.75rem 2rem;
-        border: none;
-        border-radius: 8px;
-        cursor: pointer;
-        width: 100%;
-    ">📍 Get My Location</button>
-    """
+    # Get geolocation
+    location = streamlit_geolocation()
     
-    # For demo purposes, let's use manual input as fallback
-    st.markdown(html_code, unsafe_allow_html=True)
-    st.info("**Demo mode:** Enter coordinates manually below")
-    
-    col1, col2 = st.columns(2)
-    with col1:
-        user_lat = st.number_input("Latitude", value=59.9139, format="%.6f")
-    with col2:
-        user_lon = st.number_input("Longitude", value=10.7522, format="%.6f")
-    
-    user_location = (user_lat, user_lon)
+    if location and location.get("latitude") is not None:
+        # Location successfully retrieved
+        user_lat = location["latitude"]
+        user_lon = location["longitude"]
+        user_location = (user_lat, user_lon)
+        
+        st.success(f"✅ Location detected: {user_lat:.6f}, {user_lon:.6f}")
+        
+        # Show on small map for confirmation
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            st.caption(f"📍 Your coordinates: {user_lat:.4f}, {user_lon:.4f}")
+        with col2:
+            if st.button("🔄 Refresh Location"):
+                st.rerun()
+    else:
+        # Waiting for location or permission denied
+        st.warning("""
+        ⏳ Waiting for location...
+        
+        **Troubleshooting:**
+        - Make sure you clicked "Allow" when prompted
+        - Check that location services are enabled on your device
+        - Some browsers block location access on non-HTTPS sites
+        - Try refreshing the page
+        
+        **Or use manual entry below:**
+        """)
+        
+        # Fallback to manual input
+        st.subheader("✏️ Manual Location Entry")
+        st.info("""
+        **How to get your coordinates:**
+        1. Open [Google Maps](https://www.google.com/maps)
+        2. Right-click on your location
+        3. Click "What's here?"
+        4. Copy the coordinates (e.g., 59.9139, 10.7522)
+        """)
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            user_lat = st.number_input("Latitude", value=59.9139, format="%.6f", help="Your latitude coordinate")
+        with col2:
+            user_lon = st.number_input("Longitude", value=10.7522, format="%.6f", help="Your longitude coordinate")
+        
+        user_location = (user_lat, user_lon)
 
 else:
     # Manual input
-    st.write("**Enter your coordinates:**")
+    st.info("""
+    **How to get your coordinates:**
+    1. Open [Google Maps](https://www.google.com/maps)
+    2. Right-click on your location
+    3. Click "What's here?"
+    4. Copy the coordinates (e.g., 59.9139, 10.7522)
+    """)
+    
     col1, col2 = st.columns(2)
     with col1:
-        user_lat = st.number_input("Latitude", value=59.9139, format="%.6f")
+        user_lat = st.number_input("Latitude", value=59.9139, format="%.6f", help="Your latitude coordinate")
     with col2:
-        user_lon = st.number_input("Longitude", value=10.7522, format="%.6f")
+        user_lon = st.number_input("Longitude", value=10.7522, format="%.6f", help="Your longitude coordinate")
     
     user_location = (user_lat, user_lon)
 
