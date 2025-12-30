@@ -685,6 +685,6 @@ if user_location:
 st.markdown("---")
 st.markdown("""
 <div style="text-align: center; opacity: 0.7; padding: 1rem;">
-    Made with ❤️ for Oslo drivers | Data from Oslo Municipality
+    Made with ❤️ for Rawdooshy | Data from Oslo Municipality
 </div>
 """, unsafe_allow_html=True)
