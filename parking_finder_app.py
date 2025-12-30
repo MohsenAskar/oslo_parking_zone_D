@@ -567,7 +567,7 @@ else:
     user_location = (user_lat, user_lon)
 
 # Number of results
-n_results = st.slider("Number of nearby parking spots to show", 5, 20, 10)
+n_results = st.slider("Number of nearby parking spots to show", 5, 50, 10)
 
 if user_location:
     # Find nearest parking
